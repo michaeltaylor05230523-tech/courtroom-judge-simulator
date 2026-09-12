@@ -581,7 +581,7 @@
                 <h3>Charges</h3>
                 <div id="charges"></div>
 
-                <h3>Evidence</h3>
+                <h3>Evidence <span class="status-badge status-pending" id="evidenceCount"></span></h3>
                 <div id="evidenceList"></div>
             </div>
 
@@ -1083,6 +1083,7 @@ function showTool(toolName, button) {
 
 function renderCourtCalendar() {
     const list = document.getElementById("calendarList");
+    if (!list) return;
     list.innerHTML = "";
 
     courtCalendar.forEach(event => {
@@ -1103,6 +1104,7 @@ function renderDefendantRecord() {
     const c = currentCase();
     const record = defendantRecords[c.name];
     const target = document.getElementById("recordContent");
+    if (!target) return;
 
     if (!record) {
         target.innerHTML = "<p>No prior-record information is available for this defendant.</p>";
@@ -1141,6 +1143,7 @@ function renderDefendantRecord() {
 
 function renderInmateRoster() {
     const target = document.getElementById("rosterContent");
+    if (!target) return;
     target.innerHTML = "";
 
     inmateRoster.forEach(inmate => {
@@ -1203,7 +1206,8 @@ function loadCase() {
 
     const evidenceList = document.getElementById("evidenceList");
     evidenceList.innerHTML = "";
-    document.getElementById("evidenceCount").textContent = c.evidence.length + " ITEMS";
+    const evidenceCount = document.getElementById("evidenceCount");
+    if (evidenceCount) evidenceCount.textContent = c.evidence.length + " ITEMS";
 
     c.evidence.forEach((item, index) => {
 
@@ -1607,7 +1611,9 @@ function nextCase() {
             </div>`;
 
         document.getElementById("verdictBox").style.display = "none";
-        renderCourtAdministration();
+        renderCourtCalendar();
+        renderInmateRoster();
+        document.getElementById("recordContent").innerHTML = "<p>Select an active case to view its defendant record.</p>";
 
         return;
     }
