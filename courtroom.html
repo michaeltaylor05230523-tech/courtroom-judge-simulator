@@ -392,6 +392,115 @@
         #defendant { left: 25%; }
         #witness { right: 25%; }
     }
+
+    .court-tools {
+        margin-top: 20px;
+        background: #202020;
+        border: 1px solid #765a3c;
+        padding: 18px;
+    }
+
+    .tool-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 15px;
+    }
+
+    .tool-tab {
+        margin: 0;
+    }
+
+    .tool-tab.active {
+        background: #6a4a2d;
+        border-color: #d6b36a;
+    }
+
+    .tool-section {
+        display: none;
+    }
+
+    .tool-section.active {
+        display: block;
+    }
+
+    .record-grid,
+    .calendar-grid,
+    .roster-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .record-card,
+    .calendar-card,
+    .inmate-card {
+        background: #181818;
+        border: 1px solid #444;
+        padding: 14px;
+    }
+
+    .record-card strong,
+    .calendar-card strong,
+    .inmate-card strong {
+        color: #d6b36a;
+    }
+
+    .record-item,
+    .calendar-event,
+    .discipline-item {
+        padding: 9px 0;
+        border-bottom: 1px solid #333;
+    }
+
+    .record-item:last-child,
+    .calendar-event:last-child,
+    .discipline-item:last-child {
+        border-bottom: 0;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 3px 7px;
+        border: 1px solid #777;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: .7px;
+        margin-left: 5px;
+    }
+
+    .status-pending { color: #e7c77c; border-color: #9b7a4d; }
+    .status-sentenced { color: #e88b8b; border-color: #a84a4a; }
+    .status-released { color: #7fd18a; border-color: #4f8f57; }
+
+    .calendar-date {
+        font-size: 12px;
+        color: #aaa;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .evidence-meta {
+        color: #9bb5c2;
+        font-size: 11px;
+        margin-top: 4px;
+    }
+
+    .record-warning {
+        border-left: 4px solid #a84a4a;
+        padding: 10px;
+        background: #291919;
+        margin-bottom: 12px;
+    }
+
+    @media (max-width: 800px) {
+        .record-grid,
+        .calendar-grid,
+        .roster-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
 </style>
 </head>
 
@@ -513,6 +622,34 @@
         </div>
     </div>
 
+        <div class="court-tools">
+            <h2>Court Administration</h2>
+            <div class="tool-tabs">
+                <button class="tool-tab active" onclick="showTool('calendar', this)">Court Calendar</button>
+                <button class="tool-tab" onclick="showTool('record', this)">Defendant Prior Record</button>
+                <button class="tool-tab" onclick="showTool('roster', this)">Inmate Roster</button>
+            </div>
+
+            <div id="tool-calendar" class="tool-section active">
+                <h3>Upcoming Court Calendar</h3>
+                <div id="calendarList" class="calendar-grid"></div>
+            </div>
+
+            <div id="tool-record" class="tool-section">
+                <h3>Defendant Prior Record</h3>
+                <div id="recordContent"></div>
+            </div>
+
+            <div id="tool-roster" class="tool-section">
+                <h3>Prison Inmate Roster</h3>
+                <p class="media-subtitle">
+                    Sentenced defendants are tracked here with facility, projected release date,
+                    and disciplinary history.
+                </p>
+                <div id="rosterContent" class="roster-grid"></div>
+            </div>
+        </div>
+
     <div class="controls">
 
         <button onclick="hearProsecution()">
@@ -626,6 +763,25 @@ const cases = [
                 doubt: 8,
                 text: "Clothing resembles that worn by the suspect."
             }
+,
+            {
+                name: "Store Receipt & Transaction Log",
+                type: "Document",
+                admissibility: "Admissible",
+                strength: 15,
+                doubt: 5,
+                text: "The transaction log establishes the approximate time of the robbery.",
+                detail: "Register activity narrows the incident to a short time window."
+            },
+            {
+                name: "911 Call Recording",
+                type: "Audio",
+                admissibility: "Admissible",
+                strength: 10,
+                doubt: 7,
+                text: "The emergency call captures the immediate report and description of the suspect.",
+                detail: "The caller's initial description can be compared with later identification evidence."
+            }
         ]
     },
 
@@ -693,6 +849,34 @@ const cases = [
                 doubt: 15,
                 text: "Documents show relationships between multiple alleged participants."
             }
+,
+            {
+                name: "Bank Transaction History",
+                type: "Financial",
+                admissibility: "Admissible",
+                strength: 30,
+                doubt: 10,
+                text: "Account activity shows payments that prosecutors connect to the alleged enterprise.",
+                detail: "Multiple transfers occurred near dates identified in the cooperating witness's testimony."
+            },
+            {
+                name: "Corporate Email Chain",
+                type: "Digital",
+                admissibility: "Admissible",
+                strength: 22,
+                doubt: 12,
+                text: "Emails document communications among several alleged participants.",
+                detail: "The messages contain business language that the parties dispute as legitimate or coded."
+            },
+            {
+                name: "Search-Warrant Inventory",
+                type: "Physical",
+                admissibility: "Admissible",
+                strength: 18,
+                doubt: 6,
+                text: "Investigators recovered records and electronic devices during a search.",
+                detail: "The inventory corroborates that investigators recovered materials described elsewhere in the record."
+            }
         ]
     },
 
@@ -746,9 +930,129 @@ const cases = [
                 doubt: 10,
                 text: "Timeline supports the prosecution's account but has gaps."
             }
+,
+            {
+                name: "Medical Examiner Report",
+                type: "Forensic",
+                admissibility: "Admissible",
+                strength: 28,
+                doubt: 8,
+                text: "The report documents the cause and estimated manner of death.",
+                detail: "The findings support a fatal traumatic injury but do not independently establish who initiated the confrontation."
+            },
+            {
+                name: "Scene Photograph Set",
+                type: "Physical",
+                admissibility: "Admissible",
+                strength: 16,
+                doubt: 7,
+                text: "Photographs document the scene layout and physical evidence.",
+                detail: "The photographs help the court evaluate competing descriptions of the scene."
+            },
+            {
+                name: "Emergency Dispatch Log",
+                type: "Document",
+                admissibility: "Admissible",
+                strength: 12,
+                doubt: 6,
+                text: "Dispatch records establish the timing of the emergency response.",
+                detail: "The time sequence can be compared with witness and forensic testimony."
+            }
         ]
     }
 
+];
+
+
+/* Extended judicial administration data */
+const courtCalendar = [
+    { date: "2026-09-14", time: "9:00 AM", case: "State v. Marcus Reed", event: "Pretrial Status Conference", courtroom: "Courtroom 2", judgeNote: "Review discovery status and outstanding motions." },
+    { date: "2026-09-15", time: "10:30 AM", case: "United States v. Elena Vargas", event: "RICO Evidentiary Hearing", courtroom: "Federal Courtroom 4", judgeNote: "Address admissibility and authentication of financial records." },
+    { date: "2026-09-16", time: "1:30 PM", case: "State v. Daniel Brooks", event: "Motions Hearing", courtroom: "Courtroom 1", judgeNote: "Consider pending evidentiary motions before trial." },
+    { date: "2026-09-18", time: "9:00 AM", case: "State v. Marcus Reed", event: "Jury Trial — Day 1", courtroom: "Courtroom 2", judgeNote: "Opening statements and initial evidence." },
+    { date: "2026-09-21", time: "9:00 AM", case: "United States v. Elena Vargas", event: "Jury Trial — Day 1", courtroom: "Federal Courtroom 4", judgeNote: "Federal RICO trial proceedings begin." },
+    { date: "2026-09-24", time: "9:00 AM", case: "State v. Daniel Brooks", event: "Jury Trial — Day 1", courtroom: "Courtroom 1", judgeNote: "Opening statements and forensic evidence." }
+];
+
+const defendantRecords = {
+    "State v. Marcus Reed": {
+        name: "Marcus Reed",
+        status: "Pending Trial",
+        aliases: ["Marcus J. Reed"],
+        priorConvictions: [
+            { year: 2021, offense: "Simple Battery", disposition: "Misdemeanor conviction", sentence: "6 months probation" },
+            { year: 2018, offense: "Theft", disposition: "Misdemeanor conviction", sentence: "12 months probation" }
+        ],
+        priorArrests: [
+            { year: 2023, offense: "Possession of Stolen Property", disposition: "Charge dismissed" }
+        ],
+        notes: "Prior record may be relevant only where legally admissible. The court must not treat an arrest as proof of guilt."
+    },
+    "United States v. Elena Vargas": {
+        name: "Elena Vargas",
+        status: "Pending Trial",
+        aliases: ["Elena M. Vargas"],
+        priorConvictions: [
+            { year: 2017, offense: "Tax Filing Violation", disposition: "Federal misdemeanor conviction", sentence: "Fine and 1 year supervised release" }
+        ],
+        priorArrests: [
+            { year: 2020, offense: "Wire Fraud", disposition: "No indictment filed" }
+        ],
+        notes: "The defendant's prior record is separate from the evidence proving the current RICO allegations."
+    },
+    "State v. Daniel Brooks": {
+        name: "Daniel Brooks",
+        status: "Pending Trial",
+        aliases: ["Daniel R. Brooks"],
+        priorConvictions: [
+            { year: 2019, offense: "Driving While Intoxicated", disposition: "Misdemeanor conviction", sentence: "Probation and treatment program" }
+        ],
+        priorArrests: [
+            { year: 2022, offense: "Disorderly Conduct", disposition: "Charge dismissed" }
+        ],
+        notes: "The prior record does not establish whether the defendant committed the current homicide."
+    }
+};
+
+const inmateRoster = [
+    {
+        defendant: "Former Defendant — James Holloway",
+        status: "Sentenced",
+        offense: "Aggravated Robbery",
+        sentence: "12 years",
+        prison: "Bayou Regional Correctional Center",
+        admissionDate: "2023-04-18",
+        releaseDate: "2035-04-17",
+        disciplinaryActions: [
+            { date: "2024-02-11", action: "Major infraction — possession of contraband", outcome: "30 days loss of privileges" },
+            { date: "2025-08-03", action: "Minor infraction — unauthorized area", outcome: "Written warning" }
+        ]
+    },
+    {
+        defendant: "Former Defendant — Anthony Mercer",
+        status: "Sentenced",
+        offense: "Money Laundering",
+        sentence: "8 years",
+        prison: "Pelican State Correctional Facility",
+        admissionDate: "2025-01-09",
+        releaseDate: "2033-01-08",
+        disciplinaryActions: [
+            { date: "2025-05-19", action: "Minor infraction — failure to follow housing directive", outcome: "Counseling" }
+        ]
+    },
+    {
+        defendant: "Former Defendant — Carla Benton",
+        status: "Released",
+        offense: "Wire Fraud",
+        sentence: "5 years",
+        prison: "North Delta Correctional Institution",
+        admissionDate: "2020-06-01",
+        releaseDate: "2025-05-31",
+        disciplinaryActions: [
+            { date: "2022-11-14", action: "Major infraction — fighting", outcome: "15 days disciplinary segregation" },
+            { date: "2024-03-22", action: "No major infraction", outcome: "Record clear for review period" }
+        ]
+    }
 ];
 
 let currentCaseIndex = 0;
@@ -763,6 +1067,114 @@ let mediaAttention = 0;
 
 function currentCase() {
     return cases[currentCaseIndex];
+}
+
+
+function showTool(toolName, button) {
+    document.querySelectorAll(".tool-section").forEach(section => {
+        section.classList.remove("active");
+    });
+    document.querySelectorAll(".tool-tab").forEach(tab => {
+        tab.classList.remove("active");
+    });
+    document.getElementById("tool-" + toolName).classList.add("active");
+    button.classList.add("active");
+}
+
+function renderCourtCalendar() {
+    const list = document.getElementById("calendarList");
+    list.innerHTML = "";
+
+    courtCalendar.forEach(event => {
+        const card = document.createElement("div");
+        card.className = "calendar-card";
+        card.innerHTML = `
+            <div class="calendar-date">${event.date} • ${event.time}</div>
+            <h3>${event.event}</h3>
+            <div><strong>${event.case}</strong></div>
+            <div class="record-item">Courtroom: ${event.courtroom}</div>
+            <div class="record-item">${event.judgeNote}</div>
+        `;
+        list.appendChild(card);
+    });
+}
+
+function renderDefendantRecord() {
+    const c = currentCase();
+    const record = defendantRecords[c.name];
+    const target = document.getElementById("recordContent");
+
+    if (!record) {
+        target.innerHTML = "<p>No prior-record information is available for this defendant.</p>";
+        return;
+    }
+
+    target.innerHTML = `
+        <div class="record-card">
+            <h3>${record.name} <span class="status-badge status-pending">${record.status}</span></h3>
+            <p><strong>Known aliases:</strong> ${record.aliases.join(", ") || "None listed"}</p>
+
+            <div class="record-warning">
+                <strong>Judicial caution:</strong> ${record.notes}
+            </div>
+
+            <h3>Prior Convictions</h3>
+            ${record.priorConvictions.length
+                ? record.priorConvictions.map(item => `
+                    <div class="record-item">
+                        <strong>${item.year} — ${item.offense}</strong><br>
+                        ${item.disposition}; Sentence: ${item.sentence}
+                    </div>`).join("")
+                : "<p>No prior convictions listed.</p>"}
+
+            <h3>Prior Arrests / Charges</h3>
+            ${record.priorArrests.length
+                ? record.priorArrests.map(item => `
+                    <div class="record-item">
+                        <strong>${item.year} — ${item.offense}</strong><br>
+                        ${item.disposition}
+                    </div>`).join("")
+                : "<p>No prior arrests listed.</p>"}
+        </div>
+    `;
+}
+
+function renderInmateRoster() {
+    const target = document.getElementById("rosterContent");
+    target.innerHTML = "";
+
+    inmateRoster.forEach(inmate => {
+        const statusClass =
+            inmate.status === "Released" ? "status-released" : "status-sentenced";
+
+        const card = document.createElement("div");
+        card.className = "inmate-card";
+        card.innerHTML = `
+            <h3>${inmate.defendant}
+                <span class="status-badge ${statusClass}">${inmate.status}</span>
+            </h3>
+            <div class="record-item"><strong>Offense:</strong> ${inmate.offense}</div>
+            <div class="record-item"><strong>Sentence:</strong> ${inmate.sentence}</div>
+            <div class="record-item"><strong>Prison:</strong> ${inmate.prison}</div>
+            <div class="record-item"><strong>Admission Date:</strong> ${inmate.admissionDate}</div>
+            <div class="record-item"><strong>Release Date:</strong> ${inmate.releaseDate}</div>
+            <h3>Disciplinary Actions</h3>
+            ${inmate.disciplinaryActions.length
+                ? inmate.disciplinaryActions.map(item => `
+                    <div class="discipline-item">
+                        <strong>${item.date}</strong> — ${item.action}<br>
+                        Outcome: ${item.outcome}
+                    </div>`).join("")
+                : "<p>No disciplinary actions recorded.</p>"}
+        `;
+        target.appendChild(card);
+    });
+}
+
+function renderCourtAdministration() {
+    renderCourtCalendar();
+    renderDefendantRecord();
+    renderInmateRoster();
 }
 
 function loadCase() {
@@ -791,6 +1203,7 @@ function loadCase() {
 
     const evidenceList = document.getElementById("evidenceList");
     evidenceList.innerHTML = "";
+    document.getElementById("evidenceCount").textContent = c.evidence.length + " ITEMS";
 
     c.evidence.forEach((item, index) => {
 
@@ -800,12 +1213,14 @@ function loadCase() {
                  onclick="reviewEvidence(${index})">
                 <strong>${item.name}</strong><br>
                 <small>Click to examine evidence.</small>
+                <div class="evidence-meta">${item.type || "Evidence"} • ${item.admissibility || "Status pending"}</div>
             </div>
         `;
 
     });
 
     renderMedia();
+    renderCourtAdministration();
 
     document.getElementById("courtLog").innerHTML = "";
     document.getElementById("verdictBox").style.display = "none";
@@ -928,7 +1343,9 @@ function reviewEvidence(index) {
         "EVIDENCE REVIEWED: " +
         item.name +
         ". " +
-        item.text,
+        item.text +
+        (item.detail ? " Detail: " + item.detail : "") +
+        " Admissibility: " + (item.admissibility || "Not specified") + ".",
         "judge"
     );
 
@@ -1190,6 +1607,7 @@ function nextCase() {
             </div>`;
 
         document.getElementById("verdictBox").style.display = "none";
+        renderCourtAdministration();
 
         return;
     }
