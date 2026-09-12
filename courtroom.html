@@ -272,8 +272,116 @@
         color: #71c978;
     }
 
+
+    .media-panel {
+        margin-top: 20px;
+        border: 1px solid #765a3c;
+        background: #202020;
+    }
+
+    .media-subtitle {
+        color: #aaa;
+        margin-top: -5px;
+    }
+
+    .media-grid {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr;
+        gap: 20px;
+    }
+
+    .news-item {
+        background: #181818;
+        border-left: 4px solid #8d6b43;
+        padding: 12px;
+        margin: 8px 0;
+        cursor: pointer;
+    }
+
+    .news-item:hover {
+        background: #242424;
+    }
+
+    .news-item.reviewed {
+        border-left-color: #68b86c;
+        opacity: .8;
+    }
+
+    .news-source {
+        color: #d6b36a;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .news-headline {
+        display: block;
+        margin: 5px 0;
+        color: #fff;
+        font-weight: bold;
+    }
+
+    .news-body {
+        color: #bbb;
+        font-size: 13px;
+        line-height: 1.4;
+    }
+
+    .media-meter {
+        background: #151515;
+        border: 1px solid #444;
+        padding: 12px;
+    }
+
+    .media-meter-label {
+        display: flex;
+        justify-content: space-between;
+        color: #ddd;
+        margin-bottom: 8px;
+    }
+
+    .media-bar {
+        height: 14px;
+        background: #333;
+        overflow: hidden;
+        border: 1px solid #555;
+    }
+
+    #mediaBarFill {
+        height: 100%;
+        width: 0%;
+        background: #9b7a4d;
+        transition: width .25s ease;
+    }
+
+    .media-notes {
+        margin-top: 12px;
+        padding: 12px;
+        background: #111;
+        border: 1px solid #444;
+        color: #aaa;
+        line-height: 1.5;
+    }
+
+
+    .high-profile-badge {
+        display: inline-block;
+        vertical-align: middle;
+        margin-left: 8px;
+        padding: 4px 7px;
+        font-size: 10px;
+        letter-spacing: 1px;
+        background: #5a2222;
+        border: 1px solid #a84a4a;
+        color: #f1b1b1;
+    }
+
     @media (max-width: 800px) {
         .panel-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .media-grid {
             grid-template-columns: 1fr;
         }
 
@@ -374,6 +482,35 @@
             </div>
 
         </div>
+
+        <div class="media-panel panel">
+            <h2>News & Media Desk</h2>
+            <p class="media-subtitle">
+                High-profile cases attract public attention. Review simulated headlines,
+                press coverage, and courtroom media before ruling.
+            </p>
+            <div class="media-grid">
+                <div>
+                    <h3>Breaking Coverage</h3>
+                    <div id="newsFeed"></div>
+                </div>
+                <div>
+                    <h3>Media Impact</h3>
+                    <div class="media-meter">
+                        <div class="media-meter-label">
+                            <span>Public Attention</span>
+                            <strong id="mediaAttention">0%</strong>
+                        </div>
+                        <div class="media-bar">
+                            <div id="mediaBarFill"></div>
+                        </div>
+                    </div>
+                    <div id="mediaNotes" class="media-notes">
+                        No media coverage has been reviewed.
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="controls">
@@ -440,6 +577,19 @@ const cases = [
 
     {
         name: "State v. Marcus Reed",
+        mediaLevel: "Local",
+        media: [
+            {
+                source: "Channel 8 News",
+                headline: "Convenience Store Robbery Draws Local Attention",
+                text: "Security footage and the eyewitness identification are receiving heavy local coverage."
+            },
+            {
+                source: "Evening Bulletin",
+                headline: "Defense Questions Reliability of Eyewitness",
+                text: "Commentators highlight the poor viewing conditions and partially obscured face."
+            }
+        ],
         type: "Robbery",
         description:
             "The defendant is accused of armed robbery at a neighborhood convenience store.",
@@ -481,6 +631,24 @@ const cases = [
 
     {
         name: "United States v. Elena Vargas",
+        mediaLevel: "HIGH PROFILE",
+        media: [
+            {
+                source: "National Desk",
+                headline: "RICO Trial Becomes Major National Story",
+                text: "National outlets are following the alleged enterprise, financial records, and cooperating witness testimony."
+            },
+            {
+                source: "Capital News Network",
+                headline: "Public Debate Intensifies Ahead of Federal Verdict",
+                text: "Legal analysts disagree about whether the financial evidence establishes the alleged criminal enterprise."
+            },
+            {
+                source: "CourtWatch",
+                headline: "Judge Warns Against Deciding Case From Headlines",
+                text: "The court record remains the controlling source for the verdict; media coverage may contain speculation."
+            }
+        ],
         type: "RICO",
         description:
             "Federal prosecutors allege that the defendant participated in an organized criminal enterprise involving extortion, fraud, and money laundering.",
@@ -530,6 +698,19 @@ const cases = [
 
     {
         name: "State v. Daniel Brooks",
+        mediaLevel: "Regional",
+        media: [
+            {
+                source: "Metro News",
+                headline: "Fatal Confrontation Sparks Public Debate",
+                text: "Coverage focuses on the disputed sequence of events and the defendant's self-defense claim."
+            },
+            {
+                source: "Justice Report",
+                headline: "Forensic Evidence Takes Center Stage",
+                text: "Analysts examine how the forensic timeline fits the competing accounts."
+            }
+        ],
         type: "Homicide",
         description:
             "The defendant is accused of second-degree murder following a fatal confrontation.",
@@ -577,6 +758,8 @@ let witnessHeard = false;
 let evidenceReviewed = [];
 let completedCases = 0;
 let reputation = 100;
+let mediaReviewed = [];
+let mediaAttention = 0;
 
 function currentCase() {
     return cases[currentCaseIndex];
@@ -590,8 +773,13 @@ function loadCase() {
     defenseHeard = false;
     witnessHeard = false;
     evidenceReviewed = [];
+    mediaReviewed = [];
+    mediaAttention = 0;
 
-    document.getElementById("caseName").textContent = c.name;
+    document.getElementById("caseName").innerHTML =
+        c.name + (c.mediaLevel === "HIGH PROFILE"
+            ? ' <span class="high-profile-badge">HIGH PROFILE</span>'
+            : '');
     document.getElementById("caseDescription").textContent = c.description;
 
     const charges = document.getElementById("charges");
@@ -616,6 +804,8 @@ function loadCase() {
         `;
 
     });
+
+    renderMedia();
 
     document.getElementById("courtLog").innerHTML = "";
     document.getElementById("verdictBox").style.display = "none";
@@ -754,6 +944,61 @@ function reviewAllEvidence() {
         }
     });
 
+}
+
+
+function renderMedia() {
+    const c = currentCase();
+    const feed = document.getElementById("newsFeed");
+    feed.innerHTML = "";
+
+    (c.media || []).forEach((item, index) => {
+        feed.innerHTML += `
+            <div class="news-item" id="media-${index}" onclick="reviewMedia(${index})">
+                <span class="news-source">${item.source}</span>
+                <span class="news-headline">${item.headline}</span>
+                <div class="news-body">${item.text}</div>
+            </div>
+        `;
+    });
+
+    if (c.mediaLevel === "HIGH PROFILE") {
+        document.getElementById("mediaNotes").textContent =
+            "High-profile designation: expect intense public scrutiny. Media coverage is informational context, not evidence.";
+    } else {
+        document.getElementById("mediaNotes").textContent =
+            "Media coverage may provide context, but it cannot replace admissible evidence in the court record.";
+    }
+
+    updateMediaDisplay();
+}
+
+function reviewMedia(index) {
+    const c = currentCase();
+    if (mediaReviewed.includes(index)) {
+        addLog("This media report has already been reviewed.");
+        return;
+    }
+
+    mediaReviewed.push(index);
+    mediaAttention = Math.min(100, mediaAttention + (c.mediaLevel === "HIGH PROFILE" ? 30 : 15));
+
+    const item = c.media[index];
+    document.getElementById("media-" + index).classList.add("reviewed");
+
+    addLog(
+        "MEDIA REVIEWED: " + item.source + " — " + item.headline +
+        ". The report is noted for public-awareness purposes only.",
+        "judge"
+    );
+
+    updateMediaDisplay();
+    updateStats();
+}
+
+function updateMediaDisplay() {
+    document.getElementById("mediaAttention").textContent = mediaAttention + "%";
+    document.getElementById("mediaBarFill").style.width = mediaAttention + "%";
 }
 
 function calculateCase() {
