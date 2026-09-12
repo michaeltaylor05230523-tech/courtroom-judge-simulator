@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bench & Verdict</title>
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        background: #111;
+        color: #eee;
+        font-family: Arial, Helvetica, sans-serif;
+        overflow-x: hidden;
+    }
+
+    #game {
+        max-width: 1200px;
+        min-height: 100vh;
+        margin: auto;
+        background: #1b1b1b;
+        border-left: 4px solid #5b4636;
+        border-right: 4px solid #5b4636;
+    }
+
+    header {
+        background: #2c2119;
+        border-bottom: 3px solid #9b7a4d;
+        padding: 18px;
+        text-align: center;
+    }
+
+    header h1 {
+        margin: 0;
+        letter-spacing: 4px;
+        color: #d6b36a;
+    }
+
+    header p {
+        margin: 8px 0 0;
+        color: #bbb;
+        font-size: 14px;
+    }
+
+    .stats {
+        display: flex;
+        justify-content: space-around;
+        flex-wrap: wrap;
+        background: #252525;
+        padding: 12px;
+        border-bottom: 1px solid #555;
+    }
+
+    .stat {
+        text-align: center;
+        min-width: 130px;
+        margin: 5px;
+    }
+
+    .stat strong {
+        display: block;
+        color: #d6b36a;
+        font-size: 20px;
+    }
+
+    .courtroom {
+        padding: 20px;
+    }
+
+    .scene {
+        position: relative;
+        min-height: 280px;
+        background: linear-gradient(to bottom, #4b3526 0%, #38271d 55%, #241a15 56%, #241a15 100%);
+        border: 3px solid #765a3c;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+
+    .bench {
+        position: absolute;
+        top: 25px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 280px;
+        height: 90px;
+        background: #3b2115;
+        border: 7px solid #70462b;
+        text-align: center;
+        padding-top: 18px;
+        font-weight: bold;
+        color: #d6b36a;
+    }
+
+    .bench::after {
+        content: "THE BENCH";
+        display: block;
+        font-size: 12px;
+        margin-top: 8px;
+        color: #eee;
+    }
+
+    .person {
+        position: absolute;
+        width: 130px;
+        text-align: center;
+        bottom: 25px;
+    }
+
+    .person .head {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: #c89b75;
+        margin: auto;
+        border: 2px solid #222;
+    }
+
+    .person .body {
+        width: 70px;
+        height: 80px;
+        background: #242424;
+        margin: auto;
+        border: 3px solid #111;
+    }
+
+    .person .label {
+        background: rgba(0,0,0,.75);
+        padding: 5px;
+        font-size: 12px;
+    }
+
+    #prosecutor { left: 8%; }
+    #defense { right: 8%; }
+    #defendant { left: 43%; bottom: 10px; }
+    #witness { right: 43%; bottom: 10px; }
+
+    .panel-grid {
+        display: grid;
+        grid-template-columns: 1fr 1.2fr;
+        gap: 20px;
+    }
+
+    .panel {
+        background: #242424;
+        border: 1px solid #555;
+        padding: 18px;
+    }
+
+    h2, h3 {
+        color: #d6b36a;
+        margin-top: 0;
+    }
+
+    .case-title {
+        font-size: 22px;
+        color: white;
+    }
+
+    .charge {
+        background: #351b1b;
+        border-left: 4px solid #b24a4a;
+        padding: 10px;
+        margin: 8px 0;
+    }
+
+    .evidence {
+        background: #1d2a32;
+        border-left: 4px solid #4e9bb8;
+        padding: 10px;
+        margin: 8px 0;
+        cursor: pointer;
+    }
+
+    .evidence:hover {
+        background: #273943;
+    }
+
+    .evidence.reviewed {
+        border-left-color: #68b86c;
+        opacity: .75;
+    }
+
+    .log {
+        height: 330px;
+        overflow-y: auto;
+        background: #111;
+        padding: 12px;
+        border: 1px solid #444;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .log-entry {
+        padding: 8px;
+        border-bottom: 1px solid #2f2f2f;
+    }
+
+    .prosecution {
+        color: #e16b6b;
+    }
+
+    .defense-text {
+        color: #71aee6;
+    }
+
+    .judge {
+        color: #d6b36a;
+    }
+
+    .controls {
+        padding: 20px;
+        background: #202020;
+        border-top: 2px solid #765a3c;
+    }
+
+    button {
+        background: #49331f;
+        color: white;
+        border: 1px solid #a47d4c;
+        padding: 12px 16px;
+        margin: 5px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    button:hover:not(:disabled) {
+        background: #6a4a2d;
+    }
+
+    button:disabled {
+        opacity: .4;
+        cursor: not-allowed;
+    }
+
+    .danger {
+        background: #5a2222;
+        border-color: #a84a4a;
+    }
+
+    .defense-btn {
+        background: #203b59;
+        border-color: #4f83b6;
+    }
+
+    .verdict-box {
+        display: none;
+        margin-top: 20px;
+        padding: 20px;
+        text-align: center;
+        background: #151515;
+        border: 3px solid #d6b36a;
+    }
+
+    .verdict-buttons {
+        margin-top: 15px;
+    }
+
+    .result {
+        font-size: 28px;
+        margin: 15px;
+        font-weight: bold;
+    }
+
+    .guilty {
+        color: #df6464;
+    }
+
+    .not-guilty {
+        color: #71c978;
+    }
+
+    @media (max-width: 800px) {
+        .panel-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .scene {
+            min-height: 380px;
+        }
+
+        #defendant { left: 25%; }
+        #witness { right: 25%; }
+    }
+</style>
+</head>
+
+<body>
+
+<div id="game">
+
+    <header>
+        <h1>BENCH & VERDICT</h1>
+        <p>A Single-Player Criminal Courtroom Simulation</p>
+    </header>
+
+    <div class="stats">
+        <div class="stat">
+            <strong id="day">1</strong>
+            Court Day
+        </div>
+
+        <div class="stat">
+            <strong id="reputation">100</strong>
+            Judicial Reputation
+        </div>
+
+        <div class="stat">
+            <strong id="casesWon">0</strong>
+            Cases Completed
+        </div>
+
+        <div class="stat">
+            <strong id="doubt">0%</strong>
+            Reasonable Doubt
+        </div>
+    </div>
+
+    <div class="courtroom">
+
+        <div class="scene">
+            <div class="bench">
+                HON. JUDGE
+            </div>
+
+            <div class="person" id="prosecutor">
+                <div class="head"></div>
+                <div class="body"></div>
+                <div class="label">PROSECUTION</div>
+            </div>
+
+            <div class="person" id="defense">
+                <div class="head"></div>
+                <div class="body"></div>
+                <div class="label">DEFENSE</div>
+            </div>
+
+            <div class="person" id="defendant">
+                <div class="head"></div>
+                <div class="body"></div>
+                <div class="label">DEFENDANT</div>
+            </div>
+
+            <div class="person" id="witness">
+                <div class="head"></div>
+                <div class="body"></div>
+                <div class="label">WITNESS STAND</div>
+            </div>
+        </div>
+
+        <div class="panel-grid">
+
+            <div class="panel">
+                <h2>Current Case</h2>
+
+                <div class="case-title" id="caseName">
+                    Loading Case...
+                </div>
+
+                <p id="caseDescription"></p>
+
+                <h3>Charges</h3>
+                <div id="charges"></div>
+
+                <h3>Evidence</h3>
+                <div id="evidenceList"></div>
+            </div>
+
+            <div class="panel">
+                <h2>Court Record</h2>
+                <div class="log" id="courtLog"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="controls">
+
+        <button onclick="hearProsecution()">
+            Hear Prosecution
+        </button>
+
+        <button class="defense-btn" onclick="hearDefense()">
+            Hear Defense
+        </button>
+
+        <button onclick="callWitness()">
+            Call Witness
+        </button>
+
+        <button class="danger" onclick="handleObjection()">
+            Rule on Objection
+        </button>
+
+        <button onclick="reviewAllEvidence()">
+            Review Evidence
+        </button>
+
+        <button onclick="openVerdict()">
+            Deliberate & Issue Verdict
+        </button>
+
+        <div class="verdict-box" id="verdictBox">
+
+            <h2>Judicial Decision</h2>
+
+            <p>
+                You must determine whether the prosecution has proven each
+                required charge beyond a reasonable doubt.
+            </p>
+
+            <div id="analysis"></div>
+
+            <div class="verdict-buttons">
+                <button class="danger" onclick="issueVerdict('GUILTY')">
+                    GUILTY
+                </button>
+
+                <button class="defense-btn" onclick="issueVerdict('NOT GUILTY')">
+                    NOT GUILTY
+                </button>
+            </div>
+
+            <div class="result" id="result"></div>
+
+            <button id="nextCaseBtn" onclick="nextCase()" style="display:none">
+                Begin Next Case
+            </button>
+
+        </div>
+
+    </div>
+</div>
+
+<script>
+
+const cases = [
+
+    {
+        name: "State v. Marcus Reed",
+        type: "Robbery",
+        description:
+            "The defendant is accused of armed robbery at a neighborhood convenience store.",
+        charges: [
+            "Armed Robbery",
+            "Aggravated Assault"
+        ],
+        prosecution: [
+            "Security footage appears to show the defendant entering the store.",
+            "A witness identifies the defendant as the robber."
+        ],
+        defense: [
+            "The security footage is grainy and the face is partially obscured.",
+            "The eyewitness viewed the suspect for less than five seconds."
+        ],
+        witness:
+            "The eyewitness admits during questioning that the robber wore a mask for part of the incident.",
+        evidence: [
+            {
+                name: "Security Camera Footage",
+                strength: 30,
+                doubt: 10,
+                text: "Video shows a person with a similar build entering the store."
+            },
+            {
+                name: "Eyewitness Identification",
+                strength: 25,
+                doubt: 20,
+                text: "Witness identifies Marcus Reed but conditions were poor."
+            },
+            {
+                name: "Recovered Clothing",
+                strength: 20,
+                doubt: 8,
+                text: "Clothing resembles that worn by the suspect."
+            }
+        ]
+    },
+
+    {
+        name: "United States v. Elena Vargas",
+        type: "RICO",
+        description:
+            "Federal prosecutors allege that the defendant participated in an organized criminal enterprise involving extortion, fraud, and money laundering.",
+        charges: [
+            "RICO Conspiracy",
+            "Wire Fraud",
+            "Money Laundering",
+            "Extortion"
+        ],
+        prosecution: [
+            "Financial records show repeated transfers between businesses allegedly controlled by the enterprise.",
+            "A cooperating witness claims the defendant attended meetings where criminal operations were discussed."
+        ],
+        defense: [
+            "The defendant's businesses had legitimate commercial relationships with several accused individuals.",
+            "The cooperating witness received a reduced sentence in exchange for testimony."
+        ],
+        witness:
+            "The cooperating witness acknowledges receiving substantial sentencing consideration from the government.",
+        evidence: [
+            {
+                name: "Enterprise Financial Ledger",
+                strength: 35,
+                doubt: 12,
+                text: "Records indicate a recurring pattern of suspicious transfers."
+            },
+            {
+                name: "Recorded Conversation",
+                strength: 40,
+                doubt: 8,
+                text: "Audio allegedly discusses payments connected to the enterprise."
+            },
+            {
+                name: "Cooperating Witness Testimony",
+                strength: 20,
+                doubt: 30,
+                text: "Witness implicates the defendant but has incentive to cooperate."
+            },
+            {
+                name: "Business Records",
+                strength: 25,
+                doubt: 15,
+                text: "Documents show relationships between multiple alleged participants."
+            }
+        ]
+    },
+
+    {
+        name: "State v. Daniel Brooks",
+        type: "Homicide",
+        description:
+            "The defendant is accused of second-degree murder following a fatal confrontation.",
+        charges: [
+            "Second-Degree Murder"
+        ],
+        prosecution: [
+            "Forensic evidence places the defendant near the scene.",
+            "A neighbor reports hearing an argument immediately before the incident."
+        ],
+        defense: [
+            "There is no direct video of the confrontation.",
+            "The defendant claims self-defense."
+        ],
+        witness:
+            "The neighbor cannot clearly identify who initiated the physical confrontation.",
+        evidence: [
+            {
+                name: "DNA Evidence",
+                strength: 35,
+                doubt: 5,
+                text: "DNA links the defendant to the scene."
+            },
+            {
+                name: "Neighbor Testimony",
+                strength: 18,
+                doubt: 20,
+                text: "Witness heard an argument but did not see the beginning."
+            },
+            {
+                name: "Forensic Timeline",
+                strength: 30,
+                doubt: 10,
+                text: "Timeline supports the prosecution's account but has gaps."
+            }
+        ]
+    }
+
+];
+
+let currentCaseIndex = 0;
+let prosecutionHeard = false;
+let defenseHeard = false;
+let witnessHeard = false;
+let evidenceReviewed = [];
+let completedCases = 0;
+let reputation = 100;
+
+function currentCase() {
+    return cases[currentCaseIndex];
+}
+
+function loadCase() {
+
+    const c = currentCase();
+
+    prosecutionHeard = false;
+    defenseHeard = false;
+    witnessHeard = false;
+    evidenceReviewed = [];
+
+    document.getElementById("caseName").textContent = c.name;
+    document.getElementById("caseDescription").textContent = c.description;
+
+    const charges = document.getElementById("charges");
+    charges.innerHTML = "";
+
+    c.charges.forEach(charge => {
+        charges.innerHTML += `<div class="charge">${charge}</div>`;
+    });
+
+    const evidenceList = document.getElementById("evidenceList");
+    evidenceList.innerHTML = "";
+
+    c.evidence.forEach((item, index) => {
+
+        evidenceList.innerHTML += `
+            <div class="evidence"
+                 id="evidence-${index}"
+                 onclick="reviewEvidence(${index})">
+                <strong>${item.name}</strong><br>
+                <small>Click to examine evidence.</small>
+            </div>
+        `;
+
+    });
+
+    document.getElementById("courtLog").innerHTML = "";
+    document.getElementById("verdictBox").style.display = "none";
+    document.getElementById("result").textContent = "";
+    document.getElementById("nextCaseBtn").style.display = "none";
+
+    updateStats();
+
+    addLog(
+        "Court is now in session. " + c.name + " is before the court.",
+        "judge"
+    );
+
+}
+
+function addLog(text, type = "") {
+
+    const log = document.getElementById("courtLog");
+
+    const entry = document.createElement("div");
+
+    entry.className = "log-entry " + type;
+    entry.textContent = text;
+
+    log.appendChild(entry);
+    log.scrollTop = log.scrollHeight;
+
+}
+
+function hearProsecution() {
+
+    if (prosecutionHeard) {
+        addLog("The prosecution has already presented its opening evidence.");
+        return;
+    }
+
+    prosecutionHeard = true;
+
+    addLog(
+        "PROSECUTION: " + currentCase().prosecution.join(" "),
+        "prosecution"
+    );
+
+    updateStats();
+
+}
+
+function hearDefense() {
+
+    if (defenseHeard) {
+        addLog("The defense has already presented this argument.");
+        return;
+    }
+
+    defenseHeard = true;
+
+    addLog(
+        "DEFENSE: " + currentCase().defense.join(" "),
+        "defense-text"
+    );
+
+    updateStats();
+
+}
+
+function callWitness() {
+
+    if (witnessHeard) {
+        addLog("The witness has already testified.");
+        return;
+    }
+
+    witnessHeard = true;
+
+    addLog(
+        "WITNESS: " + currentCase().witness,
+        "judge"
+    );
+
+    addLog(
+        "The court notes that witness credibility and potential bias must be considered.",
+        "judge"
+    );
+
+    updateStats();
+
+}
+
+function handleObjection() {
+
+    const outcomes = [
+        "OBJECTION SUSTAINED. The challenged testimony will be limited.",
+        "OBJECTION OVERRULED. The witness may answer.",
+        "The court requests clarification before ruling."
+    ];
+
+    const result =
+        outcomes[Math.floor(Math.random() * outcomes.length)];
+
+    addLog("JUDGE: " + result, "judge");
+
+}
+
+function reviewEvidence(index) {
+
+    if (evidenceReviewed.includes(index)) {
+        addLog("This evidence has already been reviewed.");
+        return;
+    }
+
+    evidenceReviewed.push(index);
+
+    const item = currentCase().evidence[index];
+
+    document
+        .getElementById("evidence-" + index)
+        .classList.add("reviewed");
+
+    addLog(
+        "EVIDENCE REVIEWED: " +
+        item.name +
+        ". " +
+        item.text,
+        "judge"
+    );
+
+    updateStats();
+
+}
+
+function reviewAllEvidence() {
+
+    currentCase().evidence.forEach((item, index) => {
+        if (!evidenceReviewed.includes(index)) {
+            reviewEvidence(index);
+        }
+    });
+
+}
+
+function calculateCase() {
+
+    const c = currentCase();
+
+    let prosecutionStrength = 0;
+    let doubt = 0;
+
+    evidenceReviewed.forEach(index => {
+
+        prosecutionStrength += c.evidence[index].strength;
+        doubt += c.evidence[index].doubt;
+
+    });
+
+    if (!prosecutionHeard) doubt += 15;
+    if (!defenseHeard) doubt += 5;
+    if (!witnessHeard) doubt += 5;
+
+    if (defenseHeard) doubt += 10;
+    if (witnessHeard) doubt += 8;
+
+    doubt = Math.min(100, doubt);
+
+    const confidence =
+        Math.max(
+            0,
+            Math.min(
+                100,
+                prosecutionStrength - doubt
+            )
+        );
+
+    return {
+        strength: prosecutionStrength,
+        doubt: doubt,
+        confidence: confidence
+    };
+
+}
+
+function updateStats() {
+
+    const analysis = calculateCase();
+
+    document.getElementById("day").textContent =
+        currentCaseIndex + 1;
+
+    document.getElementById("reputation").textContent =
+        reputation;
+
+    document.getElementById("casesWon").textContent =
+        completedCases;
+
+    document.getElementById("doubt").textContent =
+        analysis.doubt + "%";
+
+}
+
+function openVerdict() {
+
+    const c = currentCase();
+    const analysis = calculateCase();
+
+    document.getElementById("verdictBox").style.display = "block";
+
+    let recommendation;
+
+    if (evidenceReviewed.length < c.evidence.length) {
+
+        recommendation =
+            "WARNING: Not all available evidence has been reviewed.";
+
+    } else if (analysis.confidence >= 55) {
+
+        recommendation =
+            "The prosecution's case is comparatively strong. Carefully evaluate whether the legal burden has been met.";
+
+    } else {
+
+        recommendation =
+            "Significant uncertainty remains. The court must consider whether reasonable doubt exists.";
+
+    }
+
+    document.getElementById("analysis").innerHTML = `
+        <p><strong>Evidence Strength:</strong> ${analysis.strength}</p>
+        <p><strong>Estimated Reasonable Doubt:</strong> ${analysis.doubt}%</p>
+        <p>${recommendation}</p>
+    `;
+
+}
+
+function issueVerdict(verdict) {
+
+    const c = currentCase();
+    const analysis = calculateCase();
+
+    let correctVerdict;
+
+    /*
+        Simplified game rule:
+
+        High confidence = prosecution meets burden.
+        Low confidence = reasonable doubt.
+    */
+
+    if (
+        evidenceReviewed.length === c.evidence.length &&
+        prosecutionHeard &&
+        defenseHeard &&
+        analysis.confidence >= 55
+    ) {
+        correctVerdict = "GUILTY";
+    } else {
+        correctVerdict = "NOT GUILTY";
+    }
+
+    const result = document.getElementById("result");
+
+    if (verdict === correctVerdict) {
+
+        completedCases++;
+
+        reputation =
+            Math.min(100, reputation + 3);
+
+        result.textContent =
+            "VERDICT ENTERED: " +
+            verdict +
+            " — Judicial decision supported by the evidence.";
+
+        result.className =
+            "result " +
+            (verdict === "GUILTY" ? "guilty" : "not-guilty");
+
+        addLog(
+            "JUDGMENT: " + verdict + ". The case is concluded.",
+            "judge"
+        );
+
+    } else {
+
+        reputation =
+            Math.max(0, reputation - 15);
+
+        result.textContent =
+            "VERDICT ENTERED: " +
+            verdict +
+            " — The decision may not be supported by the available record.";
+
+        result.className =
+            "result " +
+            (verdict === "GUILTY" ? "guilty" : "not-guilty");
+
+        addLog(
+            "The ruling is controversial. Judicial reputation has been affected.",
+            "judge"
+        );
+
+    }
+
+    document.getElementById("nextCaseBtn").style.display = "inline-block";
+
+    updateStats();
+
+}
+
+function nextCase() {
+
+    currentCaseIndex++;
+
+    if (currentCaseIndex >= cases.length) {
+
+        document.getElementById("caseName").textContent =
+            "COURT TERM COMPLETE";
+
+        document.getElementById("caseDescription").textContent =
+            "You have completed all currently available criminal trials.";
+
+        document.getElementById("charges").innerHTML = "";
+        document.getElementById("evidenceList").innerHTML = "";
+
+        document.getElementById("courtLog").innerHTML =
+            `<div class="log-entry judge">
+                Final judicial reputation: ${reputation}/100.<br>
+                Cases completed: ${completedCases}.
+            </div>`;
+
+        document.getElementById("verdictBox").style.display = "none";
+
+        return;
+    }
+
+    loadCase();
+
+}
+
+loadCase();
+
+</script>
+
+</body>
+</html>
